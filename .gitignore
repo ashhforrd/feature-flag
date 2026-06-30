@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+.env
+.env.*
+dist/
+build/
+coverage/
+*.log
+
+# Go
+bin/
+*.test
+
+# local scratch
+work/
