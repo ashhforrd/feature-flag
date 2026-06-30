@@ -2,59 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/ashhforrd/feature-flags/services/config-service/internal/flags"
 )
 
-type Flag struct {
-	Key               string          `json:"key"`
-	Name              string          `json:"name"`
-	Description       string          `json:"description"`
-	Enabled           bool            `json:"enabled"`
-	RolloutPercentage int             `json:"rolloutPercentage"`
-	TargetingRules    []TargetingRule `json:"targetingRules"`
-	CreatedAt         time.Time       `json:"createdAt"`
-	UpdatedAt         time.Time       `json:"updatedAt"`
-}
-
-type TargetingRule struct {
-	Attribute string `json:"attribute"`
-	Operator  string `json:"operator"`
-	Value     any    `json:"value"`
-}
-
-type CreateFlagRequest struct {
-	Key               string          `json:"key"`
-	Name              string          `json:"name"`
-	Description       string          `json:"description"`
-	Enabled           bool            `json:"enabled"`
-	RolloutPercentage int             `json:"rolloutPercentage"`
-	TargetingRules    []TargetingRule `json:"targetingRules"`
-}
-
-type UpdateFlagRequest struct {
-	Name              *string          `json:"name"`
-	Description       *string          `json:"description"`
-	Enabled           *bool            `json:"enabled"`
-	RolloutPercentage *int             `json:"rolloutPercentage"`
-	TargetingRules    *[]TargetingRule `json:"targetingRules"`
-}
-
-type EvaluateFlagRequest struct {
-	User         map[string]any `json:"user"`
-	DefaultValue *bool          `json:"defaultValue"`
-}
-
-type EvaluateFlagResponse struct {
-	FlagKey string `json:"flagKey"`
-	Enabled bool   `json:"enabled"`
-	Reason  string `json:"reason"`
-}
-
-var flags = map[string]Flag{}
-
 func main() {
+	repo := flags.NewRepository()
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +22,7 @@ func main() {
 	})
 
 	mux.HandleFunc("POST /flags", func(w http.ResponseWriter, r *http.Request) {
-		var req CreateFlagRequest
+		var req flags.CreateFlagRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid JSON body")
@@ -87,14 +44,9 @@ func main() {
 			return
 		}
 
-		if _, exists := flags[req.Key]; exists {
-			writeError(w, http.StatusConflict, "flag already exists")
-			return
-		}
-
 		now := time.Now().UTC()
 
-		flag := Flag{
+		flag := flags.Flag{
 			Key:               req.Key,
 			Name:              req.Name,
 			Description:       req.Description,
@@ -105,27 +57,34 @@ func main() {
 			UpdatedAt:         now,
 		}
 
-		flags[req.Key] = flag
+		if err := repo.Create(flag); err != nil {
+			if errors.Is(err, flags.ErrFlagAlreadyExists) {
+				writeError(w, http.StatusConflict, "flag already exists")
+				return
+			}
+
+			writeError(w, http.StatusInternalServerError, "failed to create flag")
+			return
+		}
 
 		writeJSON(w, http.StatusCreated, flag)
 	})
 
 	mux.HandleFunc("GET /flags", func(w http.ResponseWriter, r *http.Request) {
-		result := make([]Flag, 0, len(flags))
-
-		for _, flag := range flags {
-			result = append(result, flag)
-		}
-
-		writeJSON(w, http.StatusOK, result)
+		writeJSON(w, http.StatusOK, repo.List())
 	})
 
 	mux.HandleFunc("GET /flags/{key}", func(w http.ResponseWriter, r *http.Request) {
 		key := r.PathValue("key")
 
-		flag, exists := flags[key]
-		if !exists {
-			writeError(w, http.StatusNotFound, "flag not found")
+		flag, err := repo.GetByKey(key)
+		if err != nil {
+			if errors.Is(err, flags.ErrFlagNotFound) {
+				writeError(w, http.StatusNotFound, "flag not found")
+				return
+			}
+
+			writeError(w, http.StatusInternalServerError, "failed to get flag")
 			return
 		}
 
@@ -135,13 +94,18 @@ func main() {
 	mux.HandleFunc("PATCH /flags/{key}", func(w http.ResponseWriter, r *http.Request) {
 		key := r.PathValue("key")
 
-		flag, exists := flags[key]
-		if !exists {
-			writeError(w, http.StatusNotFound, "flag not found")
+		flag, err := repo.GetByKey(key)
+		if err != nil {
+			if errors.Is(err, flags.ErrFlagNotFound) {
+				writeError(w, http.StatusNotFound, "flag not found")
+				return
+			}
+
+			writeError(w, http.StatusInternalServerError, "failed to get flag")
 			return
 		}
 
-		var req UpdateFlagRequest
+		var req flags.UpdateFlagRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid JSON body")
 			return
@@ -172,7 +136,11 @@ func main() {
 		}
 
 		flag.UpdatedAt = time.Now().UTC()
-		flags[key] = flag
+		
+		if err := repo.Update(flag); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to update flag")
+			return
+		}
 
 		writeJSON(w, http.StatusOK, flag)
 	})
@@ -180,7 +148,7 @@ func main() {
 	mux.HandleFunc("POST /flags/{key}/evaluate", func(w http.ResponseWriter, r *http.Request) {
 		key := r.PathValue("key")
 
-		var req EvaluateFlagRequest
+		var req flags.EvaluateFlagRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid JSON body")
 			return
@@ -191,17 +159,31 @@ func main() {
 			defaultValue = *req.DefaultValue
 		}
 
-		flag, exists := flags[key]
-		if !exists {
-			writeJSON(w, http.StatusOK, EvaluateFlagResponse{
-				FlagKey: key,
-				Enabled: defaultValue,
+		flag, err := repo.GetByKey(key)
+		if err != nil {
+			if errors.Is(err, flags.ErrFlagNotFound) {
+				writeJSON(w, http.StatusOK, flags.EvaluateFlagResponse{
+					FlagKey: key,
+					Enabled: defaultValue,
+					Reason:  "FLAG_NOT_FOUND",
+				})
+				return
+			}
+
+			writeError(w, http.StatusInternalServerError, "failed to get flag")
+			return
+		}
+
+		if !flag.Enabled {
+			writeJSON(w, http.StatusOK, flags.EvaluateFlagResponse{
+				FlagKey: flag.Key,
+				Enabled: false,
 				Reason:  "FLAG_DISABLED",
 			})
 			return
 		}
 
-		writeJSON(w, http.StatusOK, EvaluateFlagResponse{
+		writeJSON(w, http.StatusOK, flags.EvaluateFlagResponse{
 			FlagKey: flag.Key,
 			Enabled: true,
 			Reason:  "DEFAULT_RULE",
