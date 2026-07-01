@@ -167,11 +167,8 @@ func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
 	flag, err := h.repo.GetByKey(key)
 	if err != nil {
 		if errors.Is(err, ErrFlagNotFound) {
-			writeJSON(w, http.StatusOK, EvaluateFlagResponse{
-				FlagKey: key,
-				Enabled: defaultValue,
-				Reason:  "FLAG_NOT_FOUND",
-			})
+			result := Evaluate(nil, key, defaultValue)
+			writeJSON(w, http.StatusOK, result)
 			return
 		}
 
@@ -179,20 +176,8 @@ func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !flag.Enabled {
-		writeJSON(w, http.StatusOK, EvaluateFlagResponse{
-			FlagKey: flag.Key,
-			Enabled: false,
-			Reason:  "FLAG_DISABLED",
-		})
-		return
-	}
-
-	writeJSON(w, http.StatusOK, EvaluateFlagResponse{
-		FlagKey: flag.Key,
-		Enabled: true,
-		Reason:  "DEFAULT_RULE",
-	})
+	result := Evaluate(&flag, key, defaultValue)
+	writeJSON(w, http.StatusOK, result)
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
