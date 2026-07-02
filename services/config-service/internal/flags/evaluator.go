@@ -13,7 +13,7 @@ func Evaluate(flag *Flag, flagKey string, defaultValue bool) EvaluateFlagRespons
 		return EvaluateFlagResponse{
 			FlagKey: flagKey,
 			Enabled: defaultValue,
-			Reason: ReasonFlagNotFound,
+			Reason:  ReasonFlagNotFound,
 		}
 	}
 
@@ -21,14 +21,13 @@ func Evaluate(flag *Flag, flagKey string, defaultValue bool) EvaluateFlagRespons
 		return EvaluateFlagResponse{
 			FlagKey: flag.Key,
 			Enabled: false,
-			Reason: ReasonFlagDisabled,
+			Reason:  ReasonFlagDisabled,
 		}
 	}
 
 	return EvaluateFlagResponse{
 		FlagKey: flag.Key,
 		Enabled: true,
-		Reason: ReasonDefaultRule,
+		Reason:  ReasonDefaultRule,
 	}
 }
-
