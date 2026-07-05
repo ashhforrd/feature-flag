@@ -101,3 +101,83 @@ func TestEvaluateEmailEndsWithRuleReturnsTrue(t *testing.T) {
 		t.Fatalf("expected reason %s, got %s", ReasonMatchedRule, result.Reason)
 	}
 }
+
+func TestEvaluateNotEqualsRuleReturnsTrue(t *testing.T) {
+	flag := Flag{
+		Key:     "new-checkout",
+		Enabled: true,
+		TargetingRules: []TargetingRule{
+			{
+				Attribute: "country",
+				Operator:  "not_equals",
+				Value:     "SG",
+			},
+		},
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id":      "user_123",
+		"country": "ID",
+	}, false)
+
+	if !result.Enabled {
+		t.Fatalf("expected enabled true")
+	}
+
+	if result.Reason != ReasonMatchedRule {
+		t.Fatalf("expected reason %s, got %s", ReasonMatchedRule, result.Reason)
+	}
+}
+
+func TestEvaluateContainsRuleReturnsTrue(t *testing.T) {
+	flag := Flag{
+		Key:     "beta-dashboard",
+		Enabled: true,
+		TargetingRules: []TargetingRule{
+			{
+				Attribute: "email",
+				Operator:  "contains",
+				Value:     "alice",
+			},
+		},
+	}
+
+	result := Evaluate(&flag, "beta-dashboard", map[string]any{
+		"id":    "user_123",
+		"email": "alice@example.com",
+	}, false)
+
+	if !result.Enabled {
+		t.Fatalf("expected enabled true")
+	}
+
+	if result.Reason != ReasonMatchedRule {
+		t.Fatalf("expected reason %s, got %s", ReasonMatchedRule, result.Reason)
+	}
+}
+
+func TestEvaluateMissingUserAttributeDoesNotMatchRule(t *testing.T) {
+	flag := Flag{
+		Key:     "new-checkout",
+		Enabled: true,
+		TargetingRules: []TargetingRule{
+			{
+				Attribute: "country",
+				Operator:  "equals",
+				Value:     "ID",
+			},
+		},
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id": "user_123",
+	}, false)
+
+	if result.Enabled {
+		t.Fatalf("expected enabled false")
+	}
+
+	if result.Reason != ReasonDefaultRule {
+		t.Fatalf("expected reason %s, got %s", ReasonDefaultRule, result.Reason)
+	}
+}

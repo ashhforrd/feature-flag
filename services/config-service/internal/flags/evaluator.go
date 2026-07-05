@@ -27,6 +27,14 @@ func Evaluate(flag *Flag, flagKey string, user map[string]any, defaultValue bool
 		}
 	}
 
+	if len(flag.TargetingRules) == 0 {
+		return EvaluateFlagResponse{
+			FlagKey: flag.Key,
+			Enabled: true,
+			Reason:  ReasonDefaultRule,
+		}
+	}
+
 	matchedRule := firstMatchedRule(flag.TargetingRules, user)
 	if matchedRule != nil {
 		return EvaluateFlagResponse{
@@ -38,7 +46,7 @@ func Evaluate(flag *Flag, flagKey string, user map[string]any, defaultValue bool
 
 	return EvaluateFlagResponse{
 		FlagKey: flag.Key,
-		Enabled: true,
+		Enabled: defaultValue,
 		Reason:  ReasonDefaultRule,
 	}
 }
