@@ -167,7 +167,7 @@ func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
 	flag, err := h.repo.GetByKey(key)
 	if err != nil {
 		if errors.Is(err, ErrFlagNotFound) {
-			result := Evaluate(nil, key, defaultValue)
+			result := Evaluate(nil, key, req.User, defaultValue)
 			writeJSON(w, http.StatusOK, result)
 			return
 		}
@@ -176,7 +176,7 @@ func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := Evaluate(&flag, key, defaultValue)
+	result := Evaluate(&flag, key, req.User, defaultValue)
 	writeJSON(w, http.StatusOK, result)
 }
 

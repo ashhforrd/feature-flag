@@ -3,7 +3,7 @@ package flags
 import "testing"
 
 func TestEvaluateMissingFlagReturnsDefaultValue(t *testing.T) {
-	result := Evaluate(nil, "new-checkout", true)
+	result := Evaluate(nil, "new-checkout", map[string]any{}, true)
 
 	if !result.Enabled {
 		t.Fatalf("expected enabled true")
@@ -20,7 +20,7 @@ func TestEvaluateDisabledFlagReturnsFalse(t *testing.T) {
 		Enabled: false,
 	}
 
-	result := Evaluate(&flag, "new-checkout", true)
+	result := Evaluate(&flag, "new-checkout", map[string]any{}, true)
 
 	if result.Enabled {
 		t.Fatalf("expected enabled false")
@@ -37,7 +37,7 @@ func TestEvaluateEnabledFlagReturnsDefaultRule(t *testing.T) {
 		Enabled: true,
 	}
 
-	result := Evaluate(&flag, "new-checkout", false)
+	result := Evaluate(&flag, "new-checkout", map[string]any{}, false)
 
 	if !result.Enabled {
 		t.Fatalf("expected enabled true")
@@ -45,5 +45,59 @@ func TestEvaluateEnabledFlagReturnsDefaultRule(t *testing.T) {
 
 	if result.Reason != ReasonDefaultRule {
 		t.Fatalf("expected reason %s, got %s", ReasonDefaultRule, result.Reason)
+	}
+}
+
+func TestEvaluateMatchedCountryRuleReturnsTrue(t *testing.T) {
+	flag := Flag{
+		Key:     "new-checkout",
+		Enabled: true,
+		TargetingRules: []TargetingRule{
+			{
+				Attribute: "country",
+				Operator:  "equals",
+				Value:     "ID",
+			},
+		},
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id":      "user_123",
+		"country": "ID",
+	}, false)
+
+	if !result.Enabled {
+		t.Fatalf("expected enabled true")
+	}
+
+	if result.Reason != ReasonMatchedRule {
+		t.Fatalf("expected reason %s, got %s", ReasonMatchedRule, result.Reason)
+	}
+}
+
+func TestEvaluateEmailEndsWithRuleReturnsTrue(t *testing.T) {
+	flag := Flag{
+		Key:     "new-checkout",
+		Enabled: true,
+		TargetingRules: []TargetingRule{
+			{
+				Attribute: "email",
+				Operator:  "ends_with",
+				Value:     "@company.com",
+			},
+		},
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id":    "user_123",
+		"email": "alice@company.com",
+	}, false)
+
+	if !result.Enabled {
+		t.Fatalf("expected enabled true")
+	}
+
+	if result.Reason != ReasonMatchedRule {
+		t.Fatalf("expected reason %s, got %s", ReasonMatchedRule, result.Reason)
 	}
 }
