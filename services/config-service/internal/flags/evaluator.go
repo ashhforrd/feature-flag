@@ -27,20 +27,41 @@ func Evaluate(flag *Flag, flagKey string, user map[string]any, defaultValue bool
 		}
 	}
 
+	if len(flag.TargetingRules) > 0 {
+		matchedRule := firstMatchedRule(flag.TargetingRules, user)
+		if matchedRule != nil {
+			return EvaluateFlagResponse{
+				FlagKey: flag.Key,
+				Enabled: true,
+				Reason:  ReasonMatchedRule,
+			}
+		}
+	}
+
+	if flag.RolloutPercentage > 0 {
+		userID, ok := user["id"].(string)
+		if !ok || userID == "" {
+			return EvaluateFlagResponse{
+				FlagKey: flag.Key,
+				Enabled: defaultValue,
+				Reason:  ReasonDefaultRule,
+			}
+		}
+
+		bucket := bucketUser(flag.Key, userID)
+
+		return EvaluateFlagResponse{
+			FlagKey: flag.Key,
+			Enabled: bucket < flag.RolloutPercentage,
+			Reason:  ReasonPercentageRollout,
+		}
+	}
+
 	if len(flag.TargetingRules) == 0 {
 		return EvaluateFlagResponse{
 			FlagKey: flag.Key,
 			Enabled: true,
 			Reason:  ReasonDefaultRule,
-		}
-	}
-
-	matchedRule := firstMatchedRule(flag.TargetingRules, user)
-	if matchedRule != nil {
-		return EvaluateFlagResponse{
-			FlagKey: flag.Key,
-			Enabled: true,
-			Reason:  ReasonMatchedRule,
 		}
 	}
 
@@ -99,4 +120,20 @@ func matchesRule(rule TargetingRule, user map[string]any) bool {
 	default:
 		return false
 	}
+}
+
+func bucketUser(flagKey string, userID string) int {
+	hash := fnv32a(flagKey + ":" + userID)
+	return int(hash % 100)
+}
+
+func fnv32a(input string) uint32 {
+	var hash uint32 = 2166136261
+
+	for _, char := range input {
+		hash ^= uint32(char)
+		hash *= 16777619
+	}
+
+	return hash
 }

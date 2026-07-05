@@ -181,3 +181,45 @@ func TestEvaluateMissingUserAttributeDoesNotMatchRule(t *testing.T) {
 		t.Fatalf("expected reason %s, got %s", ReasonDefaultRule, result.Reason)
 	}
 }
+
+func TestEvaluatePercentageRolloutIsDeterministic(t *testing.T) {
+	flag := Flag{
+		Key:               "new-checkout",
+		Enabled:           true,
+		RolloutPercentage: 10,
+	}
+
+	user := map[string]any{
+		"id": "user_123",
+	}
+
+	first := Evaluate(&flag, "new-checkout", user, false)
+	second := Evaluate(&flag, "new-checkout", user, false)
+
+	if first.Enabled != second.Enabled {
+		t.Fatalf("expected deterministic rollout result")
+	}
+
+	if first.Reason != second.Reason {
+		t.Fatalf("expected deterministic rollout reason")
+	}
+}
+func TestEvaluateHundredPercentRolloutEnablesUser(t *testing.T) {
+	flag := Flag{
+		Key:               "new-checkout",
+		Enabled:           true,
+		RolloutPercentage: 100,
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id": "user_123",
+	}, false)
+
+	if !result.Enabled {
+		t.Fatalf("expected enabled true")
+	}
+
+	if result.Reason != ReasonPercentageRollout {
+		t.Fatalf("expected reason %s, got %s", ReasonPercentageRollout, result.Reason)
+	}
+}
