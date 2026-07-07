@@ -124,3 +124,61 @@ test("evaluate returns default value when request fails", async () => {
     globalThis.fetch = originalFetch
   }
 })
+test("recordConversion posts conversion event", async () => {
+  const originalFetch = globalThis.fetch
+
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "http://localhost:8080/flags/new-checkout/conversions")
+    assert.equal(options.method, "POST")
+    assert.equal(options.headers["Content-Type"], "application/json")
+
+    assert.deepEqual(JSON.parse(options.body), {
+      userId: "user-123",
+      eventName: "checkout_completed"
+    })
+
+    return {
+      ok: true
+    }
+  }
+
+  try {
+    const client = new FeatureFlagClient({
+      baseUrl: "http://localhost:8080"
+    })
+
+    const recorded = await client.recordConversion(
+      "new-checkout",
+      "user-123",
+      "checkout_completed"
+    )
+
+    assert.equal(recorded, true)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test("recordConversion returns false when request fails", async () => {
+  const originalFetch = globalThis.fetch
+
+  globalThis.fetch = async () => {
+    throw new Error("network error")
+  }
+
+  try {
+    const client = new FeatureFlagClient({
+      baseUrl: "http://localhost:8080"
+    })
+
+    const recorded = await client.recordConversion(
+      "new-checkout",
+      "user-123",
+      "checkout_completed"
+    )
+
+    assert.equal(recorded, false)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})

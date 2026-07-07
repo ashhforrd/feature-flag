@@ -1,45 +1,64 @@
 export class FeatureFlagClient {
-    constructor(options) {
-        if (!options || !options.baseUrl) {
-            throw new Error("baseUrl is required")
+  constructor(options) {
+    if (!options || !options.baseUrl) {
+      throw new Error("baseUrl is required")
+    }
+
+    this.baseUrl = options.baseUrl.replace(/\/$/, "")
+  }
+
+  async evaluate(flagKey, user, defaultValue = false) {
+    try {
+      const response = await fetch(`${this.baseUrl}/flags/${flagKey}/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user,
+          defaultValue
+        })
+      })
+
+      if (!response.ok) {
+        return {
+          flagKey,
+          enabled: defaultValue,
+          reason: "SDK_REQUEST_FAILED"
         }
+      }
 
-        this.baseUrl = options.baseUrl.replace(/\/$/, "")
+      return await response.json()
+    } catch (err) {
+      return {
+        flagKey,
+        enabled: defaultValue,
+        reason: "SDK_REQUEST_FAILED"
+      }
     }
+  }
 
-    async evaluate(flagKey, user, defaultValue = false) {
-        try {
-            const response = await fetch(`${this.baseUrl}/flags/${flagKey}/evaluate`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    user,
-                    defaultValue
-                })
-            })
+  async isEnabled(flagKey, user, defaultValue = false) {
+    const result = await this.evaluate(flagKey, user, defaultValue)
+    return result.enabled
+  }
 
-            if (!response.ok) {
-                return {
-                    flagKey,
-                    enabled: defaultValue,
-                    reason: "SDK_REQUEST_FAILED"
-                }
-            }
+  async recordConversion(flagKey, userId, eventName) {
+    try {
+      const response = await fetch(`${this.baseUrl}/flags/${flagKey}/conversions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId,
+          eventName
+        })
+      })
 
-            return await response.json()
-        } catch (err) {
-            return {
-                flagKey,
-                enabled: defaultValue,
-                reason: "SDK_REQUEST_FAILED"
-            }
-        }
+      return response.ok
+    } catch (err) {
+      return false
     }
-
-    async isEnabled(flagKey, user, defaultValue = false) {
-        const result = await this.evaluate(flagKey, user, defaultValue)
-        return result.enabled
-    }
+  }
 }
