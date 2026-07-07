@@ -49,11 +49,14 @@ func Evaluate(flag *Flag, flagKey string, user map[string]any, defaultValue bool
 		}
 
 		bucket := bucketUser(flag.Key, userID)
+		rolloutPercenteage := flag.RolloutPercentage
 
 		return EvaluateFlagResponse{
-			FlagKey: flag.Key,
-			Enabled: bucket < flag.RolloutPercentage,
-			Reason:  ReasonPercentageRollout,
+			FlagKey:           flag.Key,
+			Enabled:           bucket < flag.RolloutPercentage,
+			Reason:            ReasonPercentageRollout,
+			Bucket:            &bucket,
+			RolloutPercentage: &rolloutPercenteage,
 		}
 	}
 

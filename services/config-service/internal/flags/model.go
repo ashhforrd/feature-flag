@@ -42,7 +42,9 @@ type EvaluateFlagRequest struct {
 }
 
 type EvaluateFlagResponse struct {
-	FlagKey string `json:"flagKey"`
-	Enabled bool   `json:"enabled"`
-	Reason  string `json:"reason"`
+	FlagKey           string `json:"flagKey"`
+	Enabled           bool   `json:"enabled"`
+	Reason            string `json:"reason"`
+	Bucket            *int   `json:"bucket,omitempty"`
+	RolloutPercentage *int   `json:"rolloutPercentage,omitempty"`
 }

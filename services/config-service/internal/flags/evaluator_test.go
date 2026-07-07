@@ -261,3 +261,51 @@ func TestEvaluateZeroPercentRolloutUsesGlobalEnabled(t *testing.T) {
 		t.Fatalf("expected reason %s, got %s", ReasonDefaultRule, result.Reason)
 	}
 }
+
+func TestEvaluatePercentageRolloutIncludesBucketAndRolloutPercentage(t *testing.T) {
+	flag := Flag{
+		Key:               "new-checkout",
+		Enabled:           true,
+		RolloutPercentage: 10,
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id": "user_123",
+	}, false)
+
+	if result.Bucket == nil {
+		t.Fatalf("expected bucket to be present")
+	}
+
+	if *result.Bucket < 0 || *result.Bucket > 99 {
+		t.Fatalf("expected bucket between 0 and 99, got %d", *result.Bucket)
+	}
+
+	if result.RolloutPercentage == nil {
+		t.Fatalf("expected rollout percentage to be present")
+	}
+
+	if *result.RolloutPercentage != 10 {
+		t.Fatalf("expected rollout percentage 10, got %d", *result.RolloutPercentage)
+	}
+}
+
+func TestEvaluateDisabledFlagDoesNotIncludeRolloutDetails(t *testing.T) {
+	flag := Flag{
+		Key:               "new-checkout",
+		Enabled:           false,
+		RolloutPercentage: 10,
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id": "user_123",
+	}, false)
+
+	if result.Bucket != nil {
+		t.Fatalf("expected bucket to be nil")
+	}
+
+	if result.RolloutPercentage != nil {
+		t.Fatalf("expected rollout percentage to be nil")
+	}
+}
