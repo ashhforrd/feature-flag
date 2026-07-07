@@ -10,6 +10,8 @@ type Repository interface {
 	List() ([]Flag, error)
 	GetByKey(key string) (Flag, error)
 	Update(flag Flag) error
+	RecordExposure(event ExposureEvent) error
+	GetExposureSummary(flagKey string) (ExposureSummary, error)
 }
 
 type MemoryRepository struct {
@@ -57,4 +59,14 @@ func (r *MemoryRepository) Update(flag Flag) error {
 
 	r.flags[flag.Key] = flag
 	return nil
+}
+
+func (r *MemoryRepository) RecordExposure(event ExposureEvent) error {
+	return nil
+}
+
+func (r *MemoryRepository) GetExposureSummary(flagKey string) (ExposureSummary, error) {
+	return ExposureSummary{
+		FlagKey: flagKey,
+	}, nil
 }

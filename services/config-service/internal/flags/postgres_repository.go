@@ -222,3 +222,62 @@ func newUUID() (string, error) {
 		bytes[10:],
 	), nil
 }
+
+func (r *PostgresRepository) RecordExposure(event ExposureEvent) error {
+	id, err := newUUID()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(`
+		INSERT INTO exposure_events (
+			id,
+			flag_key,
+			user_id,
+			enabled,
+			reason,
+			bucket,
+			rollout_percentage,
+			created_at
+		)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`,
+		id,
+		event.FlagKey,
+		event.UserID,
+		event.Enabled,
+		event.Reason,
+		event.Bucket,
+		event.RolloutPercentage,
+		event.CreatedAt,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *PostgresRepository) GetExposureSummary(flagKey string) (ExposureSummary, error) {
+	summary := ExposureSummary{
+		FlagKey: flagKey,
+	}
+
+	err := r.db.QueryRow(`
+		SELECT
+			COUNT(*),
+			COUNT(*) FILTER (WHERE enabled = true),
+			COUNT(*) FILTER (WHERE enabled = false)
+		FROM exposure_events
+		WHERE flag_key = $1
+	`, flagKey).Scan(
+		&summary.Total,
+		&summary.Enabled,
+		&summary.Disabled,
+	)
+	if err != nil {
+		return ExposureSummary{}, err
+	}
+	return summary, nil
+}

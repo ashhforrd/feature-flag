@@ -48,3 +48,20 @@ type EvaluateFlagResponse struct {
 	Bucket            *int   `json:"bucket,omitempty"`
 	RolloutPercentage *int   `json:"rolloutPercentage,omitempty"`
 }
+
+type ExposureEvent struct {
+	FlagKey           string
+	UserID            string
+	Enabled           bool
+	Reason            string
+	Bucket            *int
+	RolloutPercentage *int
+	CreatedAt         time.Time
+}
+
+type ExposureSummary struct {
+	FlagKey  string `json:"flagKey"`
+	Total    int    `json:"total"`
+	Enabled  int    `json:"enabled"`
+	Disabled int    `json:"disabled"`
+}

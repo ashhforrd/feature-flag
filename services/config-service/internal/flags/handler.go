@@ -24,6 +24,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /flags/{key}", h.getFlag)
 	mux.HandleFunc("PATCH /flags/{key}", h.updateFlag)
 	mux.HandleFunc("POST /flags/{key}/evaluate", h.evaluateFlag)
+	mux.HandleFunc("GET /flags/{key}/exposures", h.getExposureSummary)
 }
 
 func (h *Handler) createFlag(w http.ResponseWriter, r *http.Request) {
@@ -174,6 +175,7 @@ func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, ErrFlagNotFound) {
 			result := Evaluate(nil, key, req.User, defaultValue)
+			h.recordExposure(req.User, result)
 			writeJSON(w, http.StatusOK, result)
 			return
 		}
@@ -183,7 +185,41 @@ func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := Evaluate(&flag, key, req.User, defaultValue)
+	h.recordExposure(req.User, result)
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) recordExposure(user map[string]any, result EvaluateFlagResponse) {
+	userID, ok := user["id"].(string)
+	if !ok || userID == "" {
+		return
+	}
+
+	event := ExposureEvent{
+		FlagKey:           result.FlagKey,
+		UserID:            userID,
+		Enabled:           result.Enabled,
+		Reason:            result.Reason,
+		Bucket:            result.Bucket,
+		RolloutPercentage: result.RolloutPercentage,
+		CreatedAt:         time.Now().UTC(),
+	}
+
+	if err := h.repo.RecordExposure(event); err != nil {
+		log.Printf("failed to record exposure event: %v", err)
+	}
+}
+
+func (h *Handler) getExposureSummary(w http.ResponseWriter, r *http.Request) {
+	key := r.PathValue("key")
+
+	summary, err := h.repo.GetExposureSummary(key)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get exposure summary")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, summary)
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
