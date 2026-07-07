@@ -1,5 +1,5 @@
 {
-  "name": "demo-ecommerce-app",
+  "name": "feature-flags-dashboard",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,6 +13,7 @@
     "@vitejs/plugin-react": "latest",
     "lucide-react": "^1.23.0",
     "react": "latest",
+    "react-countup": "latest",
     "react-dom": "latest",
     "tailwindcss": "^4.3.2",
     "vite": "latest"
