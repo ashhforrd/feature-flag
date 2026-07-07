@@ -65,3 +65,15 @@ type ExposureSummary struct {
 	Enabled  int    `json:"enabled"`
 	Disabled int    `json:"disabled"`
 }
+
+type ConversionEvent struct {
+	FlagKey   string
+	UserID    string
+	EventName string
+	CreatedAt time.Time
+}
+
+type RecordConversionRequest struct {
+	UserID    string `json:"userId"`
+	EventName string `json:"eventName"`
+}

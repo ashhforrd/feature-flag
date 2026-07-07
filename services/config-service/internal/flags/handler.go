@@ -25,6 +25,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PATCH /flags/{key}", h.updateFlag)
 	mux.HandleFunc("POST /flags/{key}/evaluate", h.evaluateFlag)
 	mux.HandleFunc("GET /flags/{key}/exposures", h.getExposureSummary)
+	mux.HandleFunc("POST /flags/{key}/conversions", h.recordConversion)
 }
 
 func (h *Handler) createFlag(w http.ResponseWriter, r *http.Request) {
@@ -220,6 +221,42 @@ func (h *Handler) getExposureSummary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, summary)
+}
+
+func (h *Handler) recordConversion(w http.ResponseWriter, r *http.Request) {
+	key := r.PathValue("key")
+
+	var req RecordConversionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if req.UserID == "" {
+		writeError(w, http.StatusBadRequest, "userId is required")
+		return
+	}
+
+	if req.EventName == "" {
+		writeError(w, http.StatusBadRequest, "eventName is required")
+		return
+	}
+
+	event := ConversionEvent{
+		FlagKey:   key,
+		UserID:    req.UserID,
+		EventName: req.EventName,
+		CreatedAt: time.Now().UTC(),
+	}
+
+	if err := h.repo.RecordConversion(event); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to record conversion")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]string{
+		"status": "recorded",
+	})
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {

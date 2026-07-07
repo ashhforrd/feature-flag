@@ -281,3 +281,32 @@ func (r *PostgresRepository) GetExposureSummary(flagKey string) (ExposureSummary
 	}
 	return summary, nil
 }
+
+func (r *PostgresRepository) RecordConversion(event ConversionEvent) error {
+	id, err := newUUID()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(`
+		INSERT INTO conversion_events (
+			id,
+			flag_key,
+			user_id,
+			event_name,
+			created_at
+		)
+		VALUES ($1, $2, $3, $4, $5)
+	`,
+		id,
+		event.FlagKey,
+		event.UserID,
+		event.EventName,
+		event.CreatedAt,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
