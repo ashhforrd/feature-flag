@@ -1,53 +1,191 @@
 # Feature Flag Platform
 
-A portfolio-focused Feature Flag + Experimentation Platform.
+A Feature Flag + Experimentation Platform.
 
-The goal is not just to build a CRUD app. The goal is to practice production engineering: deterministic behavior, safe defaults, failure handling, observability, load testing, and clear trade-off documentation.
+The project demonstrates how a team can safely change production behavior without redeploying code: create a flag, evaluate it for a user, roll it out gradually, track exposures, record conversions, and compare experiment outcomes.
 
-## North Star
+## What It Includes
 
-How can a team safely change production behavior without redeploying code?
+- Config service written in Go
+- PostgreSQL persistence for flags and analytics events
+- Deterministic percentage rollout
+- Attribute-based targeting rules
+- JavaScript SDK for application developers
+- Demo ecommerce checkout app using React, Vite, Tailwind, and Satoshi
+- Exposure tracking
+- Conversion tracking
+- Experiment result endpoint for conversion rate comparison
 
 ## Demo Story
 
-An e-commerce team releases a risky `new-checkout` flow by:
+An ecommerce team releases a risky `new-checkout` flow by:
 
-1. Creating a feature flag.
-2. Enabling it for internal users.
-3. Rolling it out to 1%, 10%, 25%, 50%, then 100%.
-4. Tracking exposure, purchase, and checkout error events.
-5. Comparing conversion rate between old and new checkout.
-6. Disabling the flag quickly if errors spike.
+1. Creating the `new-checkout` feature flag.
+2. Enabling it for selected users or rollout percentages.
+3. Showing classic checkout or one-page checkout in the demo app.
+4. Recording exposure events when users are evaluated.
+5. Recording conversion events when users complete checkout.
+6. Comparing conversion rates between disabled and enabled variants.
 
 ## Repository Layout
 
 ```txt
 apps/
-  dashboard/
-  demo-ecommerce-app/
+  demo-ecommerce-app/     React demo app using the JS SDK
+  dashboard/              Future dashboard app
 services/
-  config-service/
+  config-service/         Go HTTP API and PostgreSQL repositories
 packages/
-  shared/
-docs/
-  adr/
-infra/
-tests/
+  js-sdk/                 JavaScript SDK for evaluating flags
+  shared/                 Earlier shared evaluator experiments
+docs/                     Architecture and design notes
+infra/                    Docker Compose infrastructure
 ```
 
-## Current Milestone
+## Architecture
 
-Phase 1 starts with the core feature evaluation rules before HTTP, database, or UI:
+```txt
+Demo Ecommerce App
+        |
+        | uses
+        v
+JavaScript SDK
+        |
+        | HTTP
+        v
+Config Service
+        |
+        | SQL
+        v
+PostgreSQL
+```
 
-- Missing flag returns caller default, otherwise `false`.
-- Disabled flag returns disabled.
-- Targeting rules use OR semantics.
-- Missing user attributes do not match.
-- Percentage rollout uses deterministic hashing.
+The config service is the source of truth for flags and analytics events. Product apps call the SDK, and the SDK talks to the config service.
 
-Run the current tests:
+## Quick Start
+
+### 1. Start PostgreSQL
+
+From the repository root:
 
 ```sh
-npm test
+docker compose -f infra/docker-compose.yml up -d
 ```
 
+### 2. Run Migrations
+
+```sh
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/001_create_flags.sql
+
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/002_create_exposure_events.sql
+
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/003_create_conversion_events.sql
+```
+
+### 3. Run Config Service
+
+```sh
+cd services/config-service
+go test ./...
+go run ./cmd/server
+```
+
+Health check:
+
+```sh
+curl http://localhost:8080/health
+```
+
+### 4. Create Demo Flag
+
+```sh
+curl -i -X POST http://localhost:8080/flags \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "new-checkout",
+    "name": "New Checkout",
+    "description": "Gradual rollout for redesigned checkout",
+    "enabled": true,
+    "rolloutPercentage": 100,
+    "targetingRules": []
+  }'
+```
+
+### 5. Run Demo App
+
+In another terminal:
+
+```sh
+cd apps/demo-ecommerce-app
+npm install
+npm run dev
+```
+
+Open:
+
+```txt
+http://127.0.0.1:5173
+```
+
+Click the checkout button to record a conversion.
+
+### 6. Check Experiment Results
+
+```sh
+curl http://localhost:8080/flags/new-checkout/results
+```
+
+Example response:
+
+```json
+{
+  "flagKey": "new-checkout",
+  "enabled": {
+    "exposures": 3,
+    "conversions": 2,
+    "conversionRate": 0.6666666666666666
+  },
+  "disabled": {
+    "exposures": 2,
+    "conversions": 1,
+    "conversionRate": 0.5
+  }
+}
+```
+
+## Useful Endpoints
+
+```txt
+GET    /health
+POST   /flags
+GET    /flags
+GET    /flags/{key}
+PATCH  /flags/{key}
+POST   /flags/{key}/evaluate
+GET    /flags/{key}/exposures
+POST   /flags/{key}/conversions
+GET    /flags/{key}/results
+```
+
+## Current Status
+
+Done:
+
+- Core evaluator
+- Config service API
+- PostgreSQL persistence
+- JavaScript SDK
+- Demo ecommerce app
+- Exposure tracking
+- Conversion tracking
+- Experiment result calculation
+
+Next:
+
+- Dashboard for managing flags and viewing experiment results
+- More complete analytics views
+- Authentication and project/environment scoping
+- Operational hardening and load testing

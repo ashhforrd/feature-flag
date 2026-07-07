@@ -1,11 +1,17 @@
 # JavaScript SDK
 
-Small JavaScript client for evaluating feature flags from the config service.
+Small JavaScript client for evaluating feature flags and recording conversions through the config service.
 
-The SDK wraps the HTTP evaluation API so application code can ask a simple question:
+The SDK lets application code ask:
 
 ```js
 const enabled = await client.isEnabled("new-checkout", user, false)
+```
+
+and record outcomes:
+
+```js
+await client.recordConversion("new-checkout", user.id, "checkout_completed")
 ```
 
 ## Usage
@@ -19,10 +25,8 @@ const client = new FeatureFlagClient({
 
 const user = {
   id: "user-123",
-  attributes: {
-    country: "ID",
-    email: "alice@example.com"
-  }
+  country: "ID",
+  email: "alice@example.com"
 }
 
 const enabled = await client.isEnabled("new-checkout", user, false)
@@ -56,9 +60,33 @@ Example response:
 }
 ```
 
+## Record Conversion
+
+Use `recordConversion` after a user completes the business action being measured.
+
+```js
+const recorded = await client.recordConversion(
+  "new-checkout",
+  "user-123",
+  "checkout_completed"
+)
+```
+
+Returns:
+
+```js
+true
+```
+
+if the config service records the event successfully, otherwise:
+
+```js
+false
+```
+
 ## Fail-Safe Behavior
 
-If the config service is unavailable or returns a non-OK response, the SDK returns the caller-provided default value.
+If the config service is unavailable or returns a non-OK response, `evaluate` returns the caller-provided default value.
 
 ```js
 const enabled = await client.isEnabled("new-checkout", user, false)
@@ -75,6 +103,8 @@ The full `evaluate` response will look like this:
   "reason": "SDK_REQUEST_FAILED"
 }
 ```
+
+Conversion recording is also fail-safe: it returns `false` instead of throwing when the request fails.
 
 ## API
 
@@ -106,6 +136,18 @@ Returns the full evaluation response from the config service.
 
 ```js
 const result = await client.evaluate("new-checkout", user, false)
+```
+
+### `client.recordConversion(flagKey, userId, eventName)`
+
+Records a conversion event.
+
+```js
+const recorded = await client.recordConversion(
+  "new-checkout",
+  "user-123",
+  "checkout_completed"
+)
 ```
 
 ## Test

@@ -1,17 +1,18 @@
 # Config Service
 
-HTTP service for creating, updating, listing, and evaluating feature flags.
+Go HTTP service for managing feature flags, evaluating them for users, and recording basic experimentation analytics.
 
-This service stores flag configuration in PostgreSQL and exposes evaluation APIs that product applications can call at runtime.
+The service stores flag configuration, exposure events, and conversion events in PostgreSQL.
 
 ## What It Does
 
-- Create and update feature flags
-- Store flags in PostgreSQL
+- Create, list, get, and update feature flags
 - Evaluate flags for a user
 - Support targeting rules by user attributes
 - Support deterministic percentage rollout
-- Return evaluation reasons for debugging
+- Record exposure events during evaluation
+- Record conversion events from product apps
+- Return exposure summaries and experiment results
 
 ## Requirements
 
@@ -27,26 +28,32 @@ From the repository root:
 docker compose -f infra/docker-compose.yml up -d
 ```
 
-Check that the container is running:
+Check the container:
 
 ```sh
 docker compose -f infra/docker-compose.yml ps
 ```
 
-## Run Migration
+## Run Migrations
 
 From the repository root:
 
 ```sh
 docker compose -f infra/docker-compose.yml exec -T postgres \
   psql -U feature_flags -d feature_flags < services/config-service/migrations/001_create_flags.sql
+
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/002_create_exposure_events.sql
+
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/003_create_conversion_events.sql
 ```
 
-Check the table:
+Check tables:
 
 ```sh
 docker compose -f infra/docker-compose.yml exec postgres \
-  psql -U feature_flags -d feature_flags -c "\d flags"
+  psql -U feature_flags -d feature_flags -c "\dt"
 ```
 
 ## Run Tests
@@ -65,13 +72,13 @@ From `services/config-service`:
 go run ./cmd/server
 ```
 
-By default, the service connects to:
+Default database URL:
 
 ```txt
 postgres://feature_flags:feature_flags@localhost:5432/feature_flags?sslmode=disable
 ```
 
-You can override it with `DATABASE_URL`:
+Override it with:
 
 ```sh
 DATABASE_URL="postgres://feature_flags:feature_flags@localhost:5432/feature_flags?sslmode=disable" \
@@ -90,7 +97,9 @@ Expected response:
 {"status":"ok"}
 ```
 
-## Create Flag
+## Flags
+
+### Create Flag
 
 ```sh
 curl -i -X POST http://localhost:8080/flags \
@@ -105,30 +114,30 @@ curl -i -X POST http://localhost:8080/flags \
   }'
 ```
 
-## List Flags
+### List Flags
 
 ```sh
 curl http://localhost:8080/flags
 ```
 
-## Get Flag
+### Get Flag
 
 ```sh
 curl http://localhost:8080/flags/new-checkout
 ```
 
-## Update Flag
+### Update Flag
 
 ```sh
 curl -i -X PATCH http://localhost:8080/flags/new-checkout \
   -H "Content-Type: application/json" \
   -d '{
-    "enabled": false,
-    "rolloutPercentage": 0
+    "enabled": true,
+    "rolloutPercentage": 100
   }'
 ```
 
-## Evaluate Flag
+## Evaluation
 
 ```sh
 curl -i -X POST http://localhost:8080/flags/new-checkout/evaluate \
@@ -136,30 +145,90 @@ curl -i -X POST http://localhost:8080/flags/new-checkout/evaluate \
   -d '{
     "user": {
       "id": "user-123",
-      "attributes": {
-        "country": "ID",
-        "email": "alice@example.com"
-      }
+      "country": "ID",
+      "email": "alice@example.com"
     },
     "defaultValue": false
   }'
 ```
 
-Example response when the flag is disabled:
+Example response:
 
 ```json
 {
   "flagKey": "new-checkout",
-  "enabled": false,
-  "reason": "FLAG_DISABLED"
+  "enabled": true,
+  "reason": "PERCENTAGE_ROLLOUT",
+  "bucket": 42,
+  "rolloutPercentage": 50
+}
+```
+
+Evaluation records an exposure event when the request includes a user id.
+
+## Analytics
+
+### Exposure Summary
+
+```sh
+curl http://localhost:8080/flags/new-checkout/exposures
+```
+
+Example response:
+
+```json
+{
+  "flagKey": "new-checkout",
+  "total": 12,
+  "enabled": 7,
+  "disabled": 5
+}
+```
+
+### Record Conversion
+
+```sh
+curl -i -X POST http://localhost:8080/flags/new-checkout/conversions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "user-123",
+    "eventName": "checkout_completed"
+  }'
+```
+
+Expected response:
+
+```json
+{"status":"recorded"}
+```
+
+### Experiment Results
+
+```sh
+curl http://localhost:8080/flags/new-checkout/results
+```
+
+Example response:
+
+```json
+{
+  "flagKey": "new-checkout",
+  "enabled": {
+    "exposures": 10,
+    "conversions": 3,
+    "conversionRate": 0.3
+  },
+  "disabled": {
+    "exposures": 8,
+    "conversions": 1,
+    "conversionRate": 0.125
+  }
 }
 ```
 
 ## Targeting Rules
 
 A flag can include targeting rules based on user attributes.
-
-Example:
 
 ```json
 {
@@ -180,10 +249,6 @@ Rules use OR semantics: if any rule matches, the flag is enabled for the user.
 
 ## Evaluation Reasons
 
-Evaluation responses include a `reason` field to explain the decision.
-
-Common reasons:
-
 - `FLAG_NOT_FOUND`
 - `FLAG_DISABLED`
 - `MATCHED_RULE`
@@ -192,4 +257,4 @@ Common reasons:
 
 ## Notes
 
-PostgreSQL is the source of truth for flags. If the server restarts, flags remain available because they are persisted in the database.
+PostgreSQL is the source of truth. If the server restarts, flags and analytics events remain available.
