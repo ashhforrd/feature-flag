@@ -310,3 +310,65 @@ func (r *PostgresRepository) RecordConversion(event ConversionEvent) error {
 
 	return nil
 }
+
+func (r *PostgresRepository) GetExperimentResult(flagKey string) (ExperimentResult, error) {
+	result := ExperimentResult{
+		FlagKey: flagKey,
+	}
+
+	err := r.db.QueryRow(`
+		WITH latest_exposures AS (
+			SELECT DISTINCT ON (user_id)
+				user_id,
+				enabled
+			FROM exposure_events
+			WHERE flag_key = $1
+			ORDER BY user_id, created_at DESC
+		),
+		variant_stats AS (
+			SELECT
+				le.enabled,
+				COUNT(*) AS exposures,
+				COUNT(c.id) AS conversions
+			FROM latest_exposures le
+			LEFT JOIN conversion_events c
+				ON c.flag_key = $1
+				AND c.user_id = le.user_id
+			GROUP BY le.enabled
+		)
+		SELECT
+			COALESCE(SUM(exposures) FILTER (WHERE enabled = true), 0),
+			COALESCE(SUM(conversions) FILTER (WHERE enabled = true), 0),
+			COALESCE(SUM(exposures) FILTER (WHERE enabled = false), 0),
+			COALESCE(SUM(conversions) FILTER (WHERE enabled = false), 0)
+		FROM variant_stats
+	`, flagKey).Scan(
+		&result.Enabled.Exposures,
+		&result.Enabled.Conversions,
+		&result.Disabled.Exposures,
+		&result.Disabled.Conversions,
+	)
+	if err != nil {
+		return ExperimentResult{}, err
+	}
+
+	result.Enabled.ConversionRate = conversionRate(
+		result.Enabled.Conversions,
+		result.Enabled.Exposures,
+	)
+
+	result.Disabled.ConversionRate = conversionRate(
+		result.Disabled.Conversions,
+		result.Disabled.Exposures,
+	)
+
+	return result, nil
+}
+
+func conversionRate(conversions int, exposures int) float64 {
+	if exposures == 0 {
+		return 0
+	}
+
+	return float64(conversions) / float64(exposures)
+}

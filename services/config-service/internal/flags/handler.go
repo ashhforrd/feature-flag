@@ -26,6 +26,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /flags/{key}/evaluate", h.evaluateFlag)
 	mux.HandleFunc("GET /flags/{key}/exposures", h.getExposureSummary)
 	mux.HandleFunc("POST /flags/{key}/conversions", h.recordConversion)
+	mux.HandleFunc("GET /flags/{key}/results", h.getExperimentResult)
 }
 
 func (h *Handler) createFlag(w http.ResponseWriter, r *http.Request) {
@@ -272,4 +273,16 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{
 		"error": message,
 	})
+}
+
+func (h *Handler) getExperimentResult(w http.ResponseWriter, r *http.Request) {
+	key := r.PathValue("key")
+
+	result, err := h.repo.GetExperimentResult(key)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get experiment result")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }

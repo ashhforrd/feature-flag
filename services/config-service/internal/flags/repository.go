@@ -13,6 +13,7 @@ type Repository interface {
 	RecordExposure(event ExposureEvent) error
 	GetExposureSummary(flagKey string) (ExposureSummary, error)
 	RecordConversion(event ConversionEvent) error
+	GetExperimentResult(flagKey string) (ExperimentResult, error)
 }
 
 type MemoryRepository struct {
@@ -74,4 +75,10 @@ func (r *MemoryRepository) GetExposureSummary(flagKey string) (ExposureSummary, 
 
 func (r *MemoryRepository) RecordConversion(event ConversionEvent) error {
 	return nil
+}
+
+func (r *MemoryRepository) GetExperimentResult(flagKey string) (ExperimentResult, error) {
+	return ExperimentResult{
+		FlagKey: flagKey,
+	}, nil
 }

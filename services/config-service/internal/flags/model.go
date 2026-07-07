@@ -77,3 +77,15 @@ type RecordConversionRequest struct {
 	UserID    string `json:"userId"`
 	EventName string `json:"eventName"`
 }
+
+type ExperimentVariantResult struct {
+	Exposures      int     `json:"exposures"`
+	Conversions    int     `json:"conversions"`
+	ConversionRate float64 `json:"conversionRate"`
+}
+
+type ExperimentResult struct {
+	FlagKey  string                  `json:"flagKey"`
+	Enabled  ExperimentVariantResult `json:"enabled"`
+	Disabled ExperimentVariantResult `json:"disabled"`
+}
