@@ -1,15 +1,33 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/ashhforrd/feature-flags/services/config-service/internal/flags"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func main() {
-	repo := flags.NewMemoryRepository()
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		databaseURL = "postgres://feature_flags:feature_flags@localhost:5432/feature_flags?sslmode=disable"
+	}
+
+	db, err := sql.Open("pgx", databaseURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
+	repo := flags.NewPostgresRepository(db)
 	flagHandler := flags.NewHandler(repo)
 
 	mux := http.NewServeMux()

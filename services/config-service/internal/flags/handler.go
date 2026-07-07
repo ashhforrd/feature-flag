@@ -76,7 +76,13 @@ func (h *Handler) createFlag(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) listFlags(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, h.repo.List())
+	flags, err := h.repo.List()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list flags")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, flags)
 }
 
 func (h *Handler) getFlag(w http.ResponseWriter, r *http.Request) {

@@ -7,7 +7,7 @@ var ErrFlagAlreadyExists = errors.New("flag already exists")
 
 type Repository interface {
 	Create(flag Flag) error
-	List() []Flag
+	List() ([]Flag, error)
 	GetByKey(key string) (Flag, error)
 	Update(flag Flag) error
 }
@@ -31,14 +31,14 @@ func (r *MemoryRepository) Create(flag Flag) error {
 	return nil
 }
 
-func (r *MemoryRepository) List() []Flag {
+func (r *MemoryRepository) List() ([]Flag, error) {
 	result := make([]Flag, 0, len(r.flags))
 
 	for _, flag := range r.flags {
 		result = append(result, flag)
 	}
 
-	return result
+	return result, nil
 }
 
 func (r *MemoryRepository) GetByKey(key string) (Flag, error) {
