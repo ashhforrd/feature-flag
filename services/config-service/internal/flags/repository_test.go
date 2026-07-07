@@ -6,7 +6,7 @@ import (
 )
 
 func TestRepositoryCreateAndGetByKey(t *testing.T) {
-	repo := NewRepository()
+	repo := NewMemoryRepository()
 
 	flag := Flag{
 		Key:     "new-checkout",
@@ -29,7 +29,7 @@ func TestRepositoryCreateAndGetByKey(t *testing.T) {
 }
 
 func TestRepositoryCreateDuplicateReturnsError(t *testing.T) {
-	repo := NewRepository()
+	repo := NewMemoryRepository()
 
 	flag := Flag{
 		Key:  "new-checkout",
@@ -47,7 +47,7 @@ func TestRepositoryCreateDuplicateReturnsError(t *testing.T) {
 }
 
 func TestRepositoryGetMissingFlagReturnsError(t *testing.T) {
-	repo := NewRepository()
+	repo := NewMemoryRepository()
 
 	_, err := repo.GetByKey("missing-flag")
 	if !errors.Is(err, ErrFlagNotFound) {

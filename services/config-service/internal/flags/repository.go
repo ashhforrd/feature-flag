@@ -5,17 +5,24 @@ import "errors"
 var ErrFlagNotFound = errors.New("flag not found")
 var ErrFlagAlreadyExists = errors.New("flag already exists")
 
-type Repository struct {
+type Repository interface {
+	Create(flag Flag) error
+	List() []Flag
+	GetByKey(key string) (Flag, error)
+	Update(flag Flag) error
+}
+
+type MemoryRepository struct {
 	flags map[string]Flag
 }
 
-func NewRepository() *Repository {
-	return &Repository{
+func NewMemoryRepository() *MemoryRepository {
+	return &MemoryRepository{
 		flags: map[string]Flag{},
 	}
 }
 
-func (r *Repository) Create(flag Flag) error {
+func (r *MemoryRepository) Create(flag Flag) error {
 	if _, exists := r.flags[flag.Key]; exists {
 		return ErrFlagAlreadyExists
 	}
@@ -24,7 +31,7 @@ func (r *Repository) Create(flag Flag) error {
 	return nil
 }
 
-func (r *Repository) List() []Flag {
+func (r *MemoryRepository) List() []Flag {
 	result := make([]Flag, 0, len(r.flags))
 
 	for _, flag := range r.flags {
@@ -34,7 +41,7 @@ func (r *Repository) List() []Flag {
 	return result
 }
 
-func (r *Repository) GetByKey(key string) (Flag, error) {
+func (r *MemoryRepository) GetByKey(key string) (Flag, error) {
 	flag, exists := r.flags[key]
 	if !exists {
 		return Flag{}, ErrFlagNotFound
@@ -43,7 +50,7 @@ func (r *Repository) GetByKey(key string) (Flag, error) {
 	return flag, nil
 }
 
-func (r *Repository) Update(flag Flag) error {
+func (r *MemoryRepository) Update(flag Flag) error {
 	if _, exists := r.flags[flag.Key]; !exists {
 		return ErrFlagNotFound
 	}

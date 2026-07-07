@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	repo := flags.NewRepository()
+	repo := flags.NewMemoryRepository()
 	flagHandler := flags.NewHandler(repo)
 
 	mux := http.NewServeMux()

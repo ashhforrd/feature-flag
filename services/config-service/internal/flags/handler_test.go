@@ -8,7 +8,7 @@ import (
 )
 
 func newTestServer() *http.ServeMux {
-	repo := NewRepository()
+	repo := NewMemoryRepository()
 	handler := NewHandler(repo)
 
 	mux := http.NewServeMux()
