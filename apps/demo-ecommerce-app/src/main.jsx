@@ -54,6 +54,7 @@ function App() {
   const [selectedUserId, setSelectedUserId] = useState(users[0].id)
   const [evaluation, setEvaluation] = useState(null)
   const [status, setStatus] = useState("loading")
+  const [conversionStatus, setConversionStatus] = useState("idle")
 
   const user = useMemo(
     () => users.find((item) => item.id === selectedUserId) || users[0],
@@ -69,6 +70,7 @@ function App() {
 
     async function loadFlag() {
       setStatus("loading")
+      setConversionStatus("idle")
       const result = await client.evaluate("new-checkout", user, false)
 
       if (!cancelled) {
@@ -83,6 +85,18 @@ function App() {
       cancelled = true
     }
   }, [user])
+
+  async function handleCheckoutComplete() {
+    setConversionStatus("recording")
+
+    const recorded = await client.recordConversion(
+      "new-checkout",
+      user.id,
+      "checkout_completed"
+    )
+
+    setConversionStatus(recorded ? "recorded" : "failed")
+  }
 
   const newCheckoutEnabled = evaluation?.enabled === true
 
@@ -133,9 +147,20 @@ function App() {
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
           {newCheckoutEnabled ? (
-            <NewCheckout user={user} shipping={shipping} total={total} />
+            <NewCheckout
+              user={user}
+              shipping={shipping}
+              total={total}
+              conversionStatus={conversionStatus}
+              onCheckoutComplete={handleCheckoutComplete}
+            />
           ) : (
-            <ClassicCheckout user={user} total={total} />
+            <ClassicCheckout
+              user={user}
+              total={total}
+              conversionStatus={conversionStatus}
+              onCheckoutComplete={handleCheckoutComplete}
+            />
           )}
 
           <OrderSummary subtotal={subtotal} shipping={shipping} total={total} />
@@ -145,7 +170,7 @@ function App() {
   )
 }
 
-function ClassicCheckout({ user, total }) {
+function ClassicCheckout({ user, total, conversionStatus, onCheckoutComplete }) {
   return (
     <section className="rounded-lg border border-[#dedbd2] bg-[#fffefc]/90 p-7 shadow-[0_18px_50px_rgba(31,34,38,0.08)]">
       <div className="mb-7">
@@ -159,14 +184,19 @@ function ClassicCheckout({ user, total }) {
         <ReadOnlyField label="Payment method" value="Visa ending in 4242" />
       </div>
 
-      <button className="mt-6 min-h-12 w-full rounded-md bg-zinc-950 px-5 font-bold text-white">
-        Place order {formatCurrency(total)}
+      <button
+        className="mt-6 min-h-12 w-full rounded-md bg-zinc-950 px-5 font-bold text-white disabled:cursor-not-allowed disabled:bg-zinc-400"
+        disabled={conversionStatus === "recording"}
+        onClick={onCheckoutComplete}
+      >
+        {conversionStatus === "recording" ? "Recording order" : `Place order ${formatCurrency(total)}`}
       </button>
+      <ConversionStatus status={conversionStatus} />
     </section>
   )
 }
 
-function NewCheckout({ user, shipping, total }) {
+function NewCheckout({ user, shipping, total, conversionStatus, onCheckoutComplete }) {
   return (
     <section className="rounded-lg border border-emerald-200 bg-[#fffefc]/90 p-7 shadow-[0_18px_50px_rgba(31,34,38,0.08)]">
       <div className="mb-7">
@@ -175,7 +205,7 @@ function NewCheckout({ user, shipping, total }) {
       </div>
 
       <div className="mb-5 grid gap-2 sm:grid-cols-3">
-        {['Apple Pay', 'Shop Pay', 'Card'].map((method) => (
+        {["Apple Pay", "Shop Pay", "Card"].map((method) => (
           <button key={method} className="min-h-12 rounded-md bg-emerald-100 px-4 font-bold text-emerald-950">
             {method}
           </button>
@@ -188,10 +218,39 @@ function NewCheckout({ user, shipping, total }) {
         <ReviewRow label="Due today" value={formatCurrency(total)} />
       </div>
 
-      <button className="mt-6 min-h-12 w-full rounded-md bg-emerald-800 px-5 font-bold text-white">
-        Complete secure checkout
+      <button
+        className="mt-6 min-h-12 w-full rounded-md bg-emerald-800 px-5 font-bold text-white disabled:cursor-not-allowed disabled:bg-emerald-300"
+        disabled={conversionStatus === "recording"}
+        onClick={onCheckoutComplete}
+      >
+        {conversionStatus === "recording" ? "Recording checkout" : "Complete secure checkout"}
       </button>
+      <ConversionStatus status={conversionStatus} />
     </section>
+  )
+}
+
+function ConversionStatus({ status }) {
+  if (status === "idle") {
+    return null
+  }
+
+  const styles = {
+    recording: "border-stone-300 bg-stone-50 text-zinc-600",
+    recorded: "border-emerald-200 bg-emerald-50 text-emerald-900",
+    failed: "border-red-200 bg-red-50 text-red-900"
+  }
+
+  const messages = {
+    recording: "Recording conversion event",
+    recorded: "Conversion event recorded",
+    failed: "Conversion event failed"
+  }
+
+  return (
+    <p className={`mt-4 rounded-md border px-3 py-2 text-sm font-bold ${styles[status]}`}>
+      {messages[status]}
+    </p>
   )
 }
 
