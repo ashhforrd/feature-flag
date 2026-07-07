@@ -223,3 +223,41 @@ func TestEvaluateHundredPercentRolloutEnablesUser(t *testing.T) {
 		t.Fatalf("expected reason %s, got %s", ReasonPercentageRollout, result.Reason)
 	}
 }
+
+func TestEvaluatePercentageRolloutWithoutUserIDReturnsDefaultValue(t *testing.T) {
+	flag := Flag{
+		Key:               "new-checkout",
+		Enabled:           true,
+		RolloutPercentage: 10,
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{}, false)
+
+	if result.Enabled {
+		t.Fatalf("expected enabled false")
+	}
+
+	if result.Reason != ReasonDefaultRule {
+		t.Fatalf("expected reason %s, got %s", ReasonDefaultRule, result.Reason)
+	}
+}
+
+func TestEvaluateZeroPercentRolloutUsesGlobalEnabled(t *testing.T) {
+	flag := Flag{
+		Key:               "new-checkout",
+		Enabled:           true,
+		RolloutPercentage: 0,
+	}
+
+	result := Evaluate(&flag, "new-checkout", map[string]any{
+		"id": "user_123",
+	}, false)
+
+	if !result.Enabled {
+		t.Fatalf("expected enabled true")
+	}
+
+	if result.Reason != ReasonDefaultRule {
+		t.Fatalf("expected reason %s, got %s", ReasonDefaultRule, result.Reason)
+	}
+}
