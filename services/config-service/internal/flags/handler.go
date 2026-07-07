@@ -23,7 +23,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /flags", h.listFlags)
 	mux.HandleFunc("GET /flags/{key}", h.getFlag)
 	mux.HandleFunc("PATCH /flags/{key}", h.updateFlag)
-	mux.HandleFunc("POST /flags/{key}", h.evaluateFlag)
+	mux.HandleFunc("POST /flags/{key}/evaluate", h.evaluateFlag)
 }
 
 func (h *Handler) createFlag(w http.ResponseWriter, r *http.Request) {
