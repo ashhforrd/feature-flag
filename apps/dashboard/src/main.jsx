@@ -218,7 +218,7 @@ function App() {
 
 function FlagControls({ draft, setDraft, saveFlag, saveStatus }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-slate-200 bg-white p-5">
       <SectionHeading icon={SlidersHorizontal} eyebrow="Controls" title="Release settings" />
 
       <label className="mb-4 flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 p-3">
@@ -270,7 +270,7 @@ function FlagControls({ draft, setDraft, saveFlag, saveStatus }) {
 
 function FlagSnapshot({ flag, selectedIndex }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-lg border border-slate-200 bg-white p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <SectionHeading icon={Settings2} eyebrow="Configuration" title="Flag snapshot" />
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">#{selectedIndex + 1}</span>
@@ -308,7 +308,7 @@ function InfoItem({ label, value }) {
 
 function MetricCard({ label, value, icon: Icon }) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-slate-200 bg-white p-5">
       <p className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-500">
         {Icon && <Icon className="h-4 w-4" />}
         {label}
@@ -323,7 +323,7 @@ function MetricCard({ label, value, icon: Icon }) {
 function VariantCard({ title, variant }) {
   const data = variant || { exposures: 0, conversions: 0, conversionRate: 0 }
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-slate-200 bg-white p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <SectionHeading icon={FlaskConical} eyebrow="Experiment result" title={title} />
         <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">

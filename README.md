@@ -11,7 +11,7 @@ The project demonstrates how a team can safely change production behavior withou
 - Deterministic percentage rollout
 - Attribute-based targeting rules
 - JavaScript SDK for application developers
-- Demo ecommerce checkout app using React, Vite, Tailwind, and Satoshi
+- Demo ecommerce checkout app using React + Vite
 - Exposure tracking
 - Conversion tracking
 - Experiment result endpoint for conversion rate comparison

@@ -95,7 +95,7 @@ function App() {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
       <section className="mx-auto w-full max-w-6xl">
-        <header className="rounded-lg border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <header className="rounded-lg border border-slate-200 bg-white px-6 py-5">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
@@ -177,7 +177,7 @@ function StatusPill({ children, icon: Icon }) {
 
 function ClassicCheckout({ user, total, conversionStatus, onCheckoutComplete }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-slate-200 bg-white p-6">
       <SectionHeading eyebrow="Stable flow" title="Classic checkout" icon={CreditCard} />
       <div className="grid gap-4">
         <ReadOnlyField label="Email" value={user.attributes.email} />
@@ -194,7 +194,7 @@ function ClassicCheckout({ user, total, conversionStatus, onCheckoutComplete }) 
 
 function NewCheckout({ user, shipping, total, conversionStatus, onCheckoutComplete }) {
   return (
-    <section className="rounded-lg border border-blue-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-blue-200 bg-white p-6">
       <SectionHeading eyebrow="Flagged experience" title="One-page checkout" icon={ShieldCheck} />
       <div className="mb-5 grid gap-2 sm:grid-cols-3">
         {["Apple Pay", "Shop Pay", "Card"].map((method) => (
@@ -295,7 +295,7 @@ function ReviewRow({ label, value, icon: Icon }) {
 
 function OrderSummary({ subtotal, shipping, total }) {
   return (
-    <aside className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <aside className="rounded-lg border border-slate-200 bg-white p-6">
       <h2 className="flex items-center gap-2 text-xl font-semibold tracking-normal text-slate-950">
         <Package className="h-5 w-5 text-blue-600" />
         Order summary

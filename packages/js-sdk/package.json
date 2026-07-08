@@ -1,9 +1,29 @@
 {
-  "name": "@feature-flags/js-sdk",
+  "name": "@ashhforrd/feature-flags-js",
   "version": "0.1.0",
+  "description": "JavaScript SDK for evaluating feature flags and recording experiment conversions.",
   "type": "module",
   "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --test"
+  },
+  "keywords": [
+    "feature-flags",
+    "feature-toggle",
+    "experimentation",
+    "ab-testing",
+    "sdk"
+  ],
+  "author": "ashhforrd",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
   }
 }

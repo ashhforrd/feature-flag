@@ -1,23 +1,21 @@
-# JavaScript SDK
+# Feature Flags JavaScript SDK
 
-Small JavaScript client for evaluating feature flags and recording conversions through the config service.
+JavaScript SDK for evaluating feature flags and recording conversion events against the Feature Flag Platform config service.
 
-The SDK lets application code ask:
+Use this package inside an application when you want to ask the platform whether a feature should be enabled for a specific user.
 
-```js
-const enabled = await client.isEnabled("new-checkout", user, false)
+## Install
+
+```sh
+npm install @ashhforrd/feature-flags-js
 ```
 
-and record outcomes:
+For local development inside this monorepo, the demo app imports the SDK directly from `packages/js-sdk/src/index.js`.
+
+## Quick Start
 
 ```js
-await client.recordConversion("new-checkout", user.id, "checkout_completed")
-```
-
-## Usage
-
-```js
-import { FeatureFlagClient } from "./src/index.js"
+import { FeatureFlagClient } from "@ashhforrd/feature-flags-js"
 
 const client = new FeatureFlagClient({
   baseUrl: "http://localhost:8080"
@@ -25,27 +23,30 @@ const client = new FeatureFlagClient({
 
 const user = {
   id: "user-123",
-  country: "ID",
-  email: "alice@example.com"
+  attributes: {
+    country: "ID",
+    email: "alice@example.com"
+  }
 }
 
 const enabled = await client.isEnabled("new-checkout", user, false)
 
 if (enabled) {
-  console.log("Show new checkout")
+  // Show the new feature.
 } else {
-  console.log("Show old checkout")
+  // Show the existing experience.
 }
 ```
 
-## Evaluate With Reason
+## Evaluate a Flag
 
-Use `evaluate` when the caller needs the full decision response.
+Use `evaluate` when the app needs the full decision response, including the reason and rollout metadata.
 
 ```js
 const result = await client.evaluate("new-checkout", user, false)
 
-console.log(result)
+console.log(result.enabled)
+console.log(result.reason)
 ```
 
 Example response:
@@ -60,9 +61,17 @@ Example response:
 }
 ```
 
-## Record Conversion
+## Boolean Helper
 
-Use `recordConversion` after a user completes the business action being measured.
+Use `isEnabled` when the app only needs `true` or `false`.
+
+```js
+const enabled = await client.isEnabled("new-checkout", user, false)
+```
+
+## Record a Conversion
+
+Use `recordConversion` after the user completes the business action being measured.
 
 ```js
 const recorded = await client.recordConversion(
@@ -72,29 +81,19 @@ const recorded = await client.recordConversion(
 )
 ```
 
-Returns:
-
-```js
-true
-```
-
-if the config service records the event successfully, otherwise:
-
-```js
-false
-```
+It returns `true` when the config service records the event successfully. It returns `false` if the request fails.
 
 ## Fail-Safe Behavior
 
-If the config service is unavailable or returns a non-OK response, `evaluate` returns the caller-provided default value.
+Feature flag SDKs should not crash product experiences when the flag service is unavailable.
+
+If `evaluate` fails because of a network error or non-OK response, it returns the caller-provided default value:
 
 ```js
-const enabled = await client.isEnabled("new-checkout", user, false)
+const result = await client.evaluate("new-checkout", user, false)
 ```
 
-If the request fails, `enabled` will be `false`.
-
-The full `evaluate` response will look like this:
+Fallback response:
 
 ```json
 {
@@ -104,9 +103,9 @@ The full `evaluate` response will look like this:
 }
 ```
 
-Conversion recording is also fail-safe: it returns `false` instead of throwing when the request fails.
+`recordConversion` is also fail-safe. It returns `false` instead of throwing.
 
-## API
+## API Reference
 
 ### `new FeatureFlagClient(options)`
 
@@ -120,40 +119,49 @@ const client = new FeatureFlagClient({
 
 Options:
 
-- `baseUrl`: base URL of the config service
-
-### `client.isEnabled(flagKey, user, defaultValue)`
-
-Returns only the boolean flag decision.
-
-```js
-const enabled = await client.isEnabled("new-checkout", user, false)
-```
+- `baseUrl`: config service base URL. Required.
 
 ### `client.evaluate(flagKey, user, defaultValue)`
 
 Returns the full evaluation response from the config service.
 
-```js
-const result = await client.evaluate("new-checkout", user, false)
-```
+Parameters:
+
+- `flagKey`: unique flag key, for example `new-checkout`.
+- `user`: user object with `id` and optional `attributes`.
+- `defaultValue`: value to return when the flag service cannot make a decision.
+
+### `client.isEnabled(flagKey, user, defaultValue)`
+
+Returns only the boolean decision.
 
 ### `client.recordConversion(flagKey, userId, eventName)`
 
-Records a conversion event.
+Records a conversion event for experiment results.
 
-```js
-const recorded = await client.recordConversion(
-  "new-checkout",
-  "user-123",
-  "checkout_completed"
-)
-```
+Parameters:
 
-## Test
+- `flagKey`: unique flag key.
+- `userId`: user identifier.
+- `eventName`: conversion event name, for example `checkout_completed`.
 
-From `packages/js-sdk`:
+## Backend Requirement
+
+This SDK expects the config service to expose these endpoints:
+
+- `POST /flags/{key}/evaluate`
+- `POST /flags/{key}/conversions`
+
+## Development
+
+Run tests from `packages/js-sdk`:
 
 ```sh
 npm test
+```
+
+Check the package contents before publishing:
+
+```sh
+npm pack --dry-run
 ```
