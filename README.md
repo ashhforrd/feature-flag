@@ -10,7 +10,7 @@ The project demonstrates how a team can safely change production behavior withou
 - PostgreSQL persistence for flags and analytics events
 - Deterministic percentage rollout
 - Attribute-based targeting rules
-- JavaScript SDK for application developers
+- JavaScript SDK for application developers, published as `@ashhforrd/feature-flags-js`
 - Demo ecommerce checkout app using React + Vite
 - Exposure tracking
 - Conversion tracking
@@ -31,8 +31,8 @@ An ecommerce team releases a risky `new-checkout` flow by:
 
 ```txt
 apps/
-  demo-ecommerce-app/     React demo app using the JS SDK
-  dashboard/              Future dashboard app
+  demo-ecommerce-app/     React demo app using the published JS SDK
+  dashboard/              Dashboard for managing flags and viewing experiment results
 services/
   config-service/         Go HTTP API and PostgreSQL repositories
 packages/
@@ -61,6 +61,26 @@ PostgreSQL
 ```
 
 The config service is the source of truth for flags and analytics events. Product apps call the SDK, and the SDK talks to the config service.
+
+## JavaScript SDK
+
+The SDK is published on npm:
+
+```sh
+npm install @ashhforrd/feature-flags-js
+```
+
+Example usage:
+
+```js
+import { FeatureFlagClient } from "@ashhforrd/feature-flags-js"
+
+const client = new FeatureFlagClient({
+  baseUrl: "http://localhost:8080"
+})
+
+const enabled = await client.isEnabled("new-checkout", user, false)
+```
 
 ## Quick Start
 
@@ -185,7 +205,6 @@ Done:
 
 Next:
 
-- Dashboard for managing flags and viewing experiment results
 - More complete analytics views
 - Authentication and project/environment scoping
 - Operational hardening and load testing

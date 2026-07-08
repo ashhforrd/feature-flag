@@ -11,7 +11,7 @@ import {
   Truck,
   UserRound
 } from "lucide-react"
-import { FeatureFlagClient } from "../../../packages/js-sdk/src/index.js"
+import { FeatureFlagClient } from "@ashhforrd/feature-flags-js"
 import "./styles.css"
 
 const client = new FeatureFlagClient({
