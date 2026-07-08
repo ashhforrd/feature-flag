@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client"
 import CountUpPackage from "react-countup"
 import {
   BarChart3,
-  CheckCircle2,
   FlaskConical,
   Gauge,
   GitBranch,
@@ -123,19 +122,19 @@ function App() {
   )
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <div className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 lg:grid-cols-[280px_1fr]">
-        <aside className="border-b border-slate-200 bg-white p-5 lg:border-b-0 lg:border-r">
+    <main className="min-h-screen w-screen bg-slate-950 text-slate-100">
+      <div className="min-h-screen w-full lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="border-b border-slate-800 bg-slate-900 p-5 lg:sticky lg:left-0 lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
           <div className="mb-6">
             <p className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
               <ShieldCheck className="h-3.5 w-3.5" />
               Feature Platform
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-950">Dashboard</h1>
+            <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-100">Dashboard</h1>
           </div>
 
           <button
-            className="mb-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+            className="mb-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-700 bg-slate-950 px-4 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-900"
             onClick={loadFlags}
           >
             <RefreshCw className="h-4 w-4" />
@@ -148,8 +147,8 @@ function App() {
                 key={flag.key}
                 className={`rounded-md border p-3 text-left transition ${
                   flag.key === selectedKey
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-950 hover:border-slate-400"
+                    ? "border-slate-600 bg-slate-800 text-white"
+                    : "border-slate-800 bg-slate-900 text-slate-100 hover:border-slate-600"
                 }`}
                 onClick={() => setSelectedKey(flag.key)}
               >
@@ -169,36 +168,35 @@ function App() {
           </nav>
         </aside>
 
-        <section className="p-5 sm:p-6">
-          <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <section className="w-full p-5 sm:p-6 lg:p-8">
+          <header className="mb-6 flex flex-col gap-3 border-b border-slate-800 pb-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
                 <ListFilter className="h-3.5 w-3.5" />
                 Selected flag
               </p>
-              <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">
+              <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-100">
                 {selectedFlag?.name || selectedKey || "No flag selected"}
               </h2>
-              {selectedFlag && <p className="mt-1 max-w-2xl text-sm text-slate-600">{selectedFlag.description}</p>}
+              {selectedFlag && <p className="mt-1 max-w-2xl text-sm text-slate-400">{selectedFlag.description}</p>}
             </div>
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm font-medium text-slate-400">
               <Gauge className="h-4 w-4" />
               {status === "loading" || status === "loading-detail" ? "Loading" : status === "error" ? "API error" : "Live"}
             </div>
           </header>
 
           {selectedFlag ? (
-            <div className="grid gap-4">
-              <section className="grid gap-4 xl:grid-cols-[360px_1fr]">
-                <FlagControls draft={draft} setDraft={setDraft} saveFlag={saveFlag} saveStatus={saveStatus} />
-                <FlagSnapshot flag={selectedFlag} selectedIndex={selectedIndex} />
-              </section>
-
+            <div className="grid w-full gap-4">
               <section className="grid gap-4 md:grid-cols-3">
                 <MetricCard icon={BarChart3} label="Total exposures" value={exposures?.total || 0} />
                 <MetricCard icon={TrendingUp} label="Enabled exposures" value={exposures?.enabled || 0} />
                 <MetricCard icon={Gauge} label="Disabled exposures" value={exposures?.disabled || 0} />
               </section>
+
+              <FlagSnapshot flag={selectedFlag} selectedIndex={selectedIndex} />
+
+              <FlagControls draft={draft} setDraft={setDraft} saveFlag={saveFlag} saveStatus={saveStatus} />
 
               <section className="grid gap-4 xl:grid-cols-2">
                 <VariantCard title="Enabled variant" variant={results?.enabled} />
@@ -206,7 +204,7 @@ function App() {
               </section>
             </div>
           ) : (
-            <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 text-sm text-slate-400">
               Create a flag in the config service to see dashboard data.
             </div>
           )}
@@ -218,51 +216,55 @@ function App() {
 
 function FlagControls({ draft, setDraft, saveFlag, saveStatus }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5">
-      <SectionHeading icon={SlidersHorizontal} eyebrow="Controls" title="Release settings" />
+    <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <SectionHeading icon={SlidersHorizontal} eyebrow="Controls" title="Release settings" />
+        <button
+          className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-100 px-4 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-slate-700 md:w-auto"
+          disabled={saveStatus === "saving"}
+          onClick={saveFlag}
+        >
+          <Save className="h-4 w-4" />
+          {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Save changes"}
+        </button>
+      </div>
 
-      <label className="mb-4 flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50 p-3">
-        <div>
-          <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-            <Power className="h-4 w-4" />
-            Enabled
-          </span>
-          <span className="text-sm text-slate-500">Kill switch for this flag</span>
-        </div>
-        <input
-          className="h-4 w-4 accent-slate-900"
-          type="checkbox"
-          checked={draft.enabled}
-          onChange={(event) => setDraft((current) => ({ ...current, enabled: event.target.checked }))}
-        />
-      </label>
+      <div className="grid gap-4 xl:grid-cols-[320px_1fr] xl:items-center">
+        <label className="flex items-center justify-between gap-4 rounded-md border border-slate-800 bg-slate-950 p-3">
+          <div>
+            <span className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+              <Power className="h-4 w-4" />
+              Enabled
+            </span>
+            <span className="text-sm text-slate-500">Kill switch for this flag</span>
+          </div>
+          <input
+            className="h-4 w-4 accent-slate-100"
+            type="checkbox"
+            checked={draft.enabled}
+            onChange={(event) => setDraft((current) => ({ ...current, enabled: event.target.checked }))}
+          />
+        </label>
 
-      <label className="grid gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <span className="flex items-center gap-2 text-sm font-semibold text-slate-950">
-            <Percent className="h-4 w-4" />
-            Rollout percentage
-          </span>
-          <strong className="text-sm font-semibold text-slate-950">{draft.rolloutPercentage}%</strong>
-        </div>
-        <input
-          className="accent-slate-900"
-          type="range"
-          min="0"
-          max="100"
-          value={draft.rolloutPercentage}
-          onChange={(event) => setDraft((current) => ({ ...current, rolloutPercentage: Number(event.target.value) }))}
-        />
-      </label>
+        <label className="grid gap-3 rounded-md border border-slate-800 bg-slate-950 p-3">
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+              <Percent className="h-4 w-4" />
+              Rollout percentage
+            </span>
+            <strong className="text-sm font-semibold text-slate-100">{draft.rolloutPercentage}%</strong>
+          </div>
+          <input
+            className="accent-slate-100"
+            type="range"
+            min="0"
+            max="100"
+            value={draft.rolloutPercentage}
+            onChange={(event) => setDraft((current) => ({ ...current, rolloutPercentage: Number(event.target.value) }))}
+          />
+        </label>
+      </div>
 
-      <button
-        className="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-        disabled={saveStatus === "saving"}
-        onClick={saveFlag}
-      >
-        <Save className="h-4 w-4" />
-        {saveStatus === "saving" ? "Saving" : saveStatus === "saved" ? "Saved" : "Save changes"}
-      </button>
       {saveStatus === "error" && <p className="mt-3 text-sm font-medium text-red-700">Failed to save changes.</p>}
     </section>
   )
@@ -270,12 +272,12 @@ function FlagControls({ draft, setDraft, saveFlag, saveStatus }) {
 
 function FlagSnapshot({ flag, selectedIndex }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5">
+    <section className="rounded-lg border border-slate-800 bg-slate-900 p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <SectionHeading icon={Settings2} eyebrow="Configuration" title="Flag snapshot" />
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">#{selectedIndex + 1}</span>
+        <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-400">#{selectedIndex + 1}</span>
       </div>
-      <dl className="grid gap-3 sm:grid-cols-2">
+      <dl className="flex flex-col gap-3 lg:flex-row">
         <InfoItem label="Key" value={flag.key} />
         <InfoItem label="State" value={flag.enabled ? "Enabled" : "Disabled"} />
         <InfoItem label="Rollout" value={`${flag.rolloutPercentage}%`} />
@@ -292,28 +294,28 @@ function SectionHeading({ eyebrow, title, icon: Icon }) {
         {Icon && <Icon className="h-3.5 w-3.5" />}
         {eyebrow}
       </p>
-      <h3 className="mt-1 text-xl font-semibold tracking-normal text-slate-950">{title}</h3>
+      <h3 className="mt-1 text-xl font-semibold tracking-normal text-slate-100">{title}</h3>
     </div>
   )
 }
 
 function InfoItem({ label, value }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+    <div className="min-w-0 flex-1 rounded-md border border-slate-800 bg-slate-950 p-3">
       <dt className="text-xs font-semibold uppercase text-slate-500">{label}</dt>
-      <dd className="mt-2 break-words text-base font-semibold text-slate-950">{value}</dd>
+      <dd className="mt-2 break-words text-base font-semibold text-slate-100">{value}</dd>
     </div>
   )
 }
 
 function MetricCard({ label, value, icon: Icon }) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-5">
+    <article className="rounded-lg border border-slate-800 bg-slate-900 p-5">
       <p className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-500">
         {Icon && <Icon className="h-4 w-4" />}
         {label}
       </p>
-      <strong className="text-4xl font-semibold tracking-normal text-slate-950">
+      <strong className="text-4xl font-semibold tracking-normal text-slate-100">
         <CountUp end={value} duration={0.7} preserveValue />
       </strong>
     </article>
@@ -323,10 +325,10 @@ function MetricCard({ label, value, icon: Icon }) {
 function VariantCard({ title, variant }) {
   const data = variant || { exposures: 0, conversions: 0, conversionRate: 0 }
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-5">
+    <article className="rounded-lg border border-slate-800 bg-slate-900 p-5">
       <div className="mb-5 flex items-start justify-between gap-4">
         <SectionHeading icon={FlaskConical} eyebrow="Experiment result" title={title} />
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs font-semibold text-slate-300">
           <TrendingUp className="h-3.5 w-3.5" />
           {formatPercent(data.conversionRate)}
         </span>
@@ -342,9 +344,9 @@ function VariantCard({ title, variant }) {
 
 function MiniMetric({ label, value, suffix = "", decimals = 0 }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+    <div className="rounded-md border border-slate-800 bg-slate-950 p-3">
       <p className="mb-2 text-xs font-semibold uppercase text-slate-500">{label}</p>
-      <strong className="text-xl font-semibold tracking-normal text-slate-950">
+      <strong className="text-xl font-semibold tracking-normal text-slate-100">
         <CountUp end={value} duration={0.7} decimals={decimals} preserveValue />{suffix}
       </strong>
     </div>

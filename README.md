@@ -27,6 +27,10 @@ An ecommerce team releases a risky `new-checkout` flow by:
 5. Recording conversion events when users complete checkout.
 6. Comparing conversion rates between disabled and enabled variants.
 
+## Dashboard Preview
+
+![Feature Flag Dashboard](docs/dashboard.png)
+
 ## Repository Layout
 
 ```txt
