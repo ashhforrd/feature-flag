@@ -86,6 +86,89 @@ const client = new FeatureFlagClient({
 const enabled = await client.isEnabled("new-checkout", user, false)
 ```
 
+## Local Demo
+
+Run the full platform locally with four pieces: PostgreSQL, the Go config service, the dashboard, and the ecommerce demo app.
+
+### 1. Start PostgreSQL
+
+```sh
+docker compose -f infra/docker-compose.yml up -d
+```
+
+### 2. Apply Database Migrations
+
+```sh
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/001_create_flags.sql
+
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/002_create_exposure_events.sql
+
+docker compose -f infra/docker-compose.yml exec -T postgres \
+  psql -U feature_flags -d feature_flags < services/config-service/migrations/003_create_conversion_events.sql
+```
+
+### 3. Run the Config Service
+
+```sh
+cd services/config-service
+go run ./cmd/server
+```
+
+The API runs at:
+
+```txt
+http://localhost:8080
+```
+
+### 4. Create the Demo Flag
+
+```sh
+curl -i -X POST http://localhost:8080/flags \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "new-checkout",
+    "name": "New Checkout",
+    "description": "Gradual rollout for redesigned checkout",
+    "enabled": true,
+    "rolloutPercentage": 100,
+    "targetingRules": []
+  }'
+```
+
+### 5. Run the Dashboard
+
+```sh
+cd apps/dashboard
+npm install
+npm run dev
+```
+
+Open:
+
+```txt
+http://127.0.0.1:5174
+```
+
+Use the dashboard to toggle the flag, change rollout percentage, and inspect exposure/conversion results.
+
+### 6. Run the Ecommerce Demo
+
+```sh
+cd apps/demo-ecommerce-app
+npm install
+npm run dev
+```
+
+Open:
+
+```txt
+http://127.0.0.1:5173
+```
+
+The ecommerce app uses the published JavaScript SDK and switches checkout behavior based on the `new-checkout` flag. Completing checkout records a conversion event.
+
 ## Quick Start
 
 ### 1. Start PostgreSQL
